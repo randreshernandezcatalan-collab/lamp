@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía LAMP - CentOS Stream 10</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 20px; }
+  h1 { color: #a8e6cf; text-align: center; margin-bottom: 8px; font-size: 24px; }
+  .subtitle { text-align: center; color: #888; margin-bottom: 30px; font-size: 14px; }
+
+  /* Progreso */
+  .progress { display: flex; gap: 6px; margin-bottom: 30px; flex-wrap: wrap; }
+  .progress-step { flex: 1; min-width: 40px; height: 6px; border-radius: 3px; background: #2a2a3e; cursor: pointer; transition: background 0.3s; }
+  .progress-step.done { background: #1D9E75; }
+  .progress-step.active { background: #7f77dd; }
+
+  /* Pasos */
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .step-badge { background: #1a1a4e; color: #a8e6cf; border: 1px solid #534AB7; font-size: 12px; padding: 3px 12px; border-radius: 20px; }
+  .step-badge.done { background: #0a2e1a; color: #1D9E75; border-color: #1D9E75; }
+  .step-title { font-size: 20px; color: #fff; }
+  .step-desc { color: #aaa; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+
+  /* Secciones */
+  .section { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .section-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+  /* Comandos */
+  .cmd-block { margin-bottom: 4px; }
+  .cmd-row { display: flex; align-items: stretch; border-radius: 6px; overflow: hidden; cursor: pointer; transition: opacity 0.2s; }
+  .cmd-row:hover .cmd-text { background: #1e1e3a; }
+  .cmd-text { background: #12121f; font-family: 'Courier New', monospace; font-size: 13px; color: #a8e6cf; padding: 10px 14px; flex: 1; line-height: 1.6; }
+  .cmd-text.comment { color: #555; cursor: default; }
+  .cmd-row:hover .cmd-text.comment { background: #12121f; }
+  .cmd-arrow { background: #1a1a35; color: #7f77dd; padding: 10px 12px; display: flex; align-items: center; font-size: 16px; transition: background 0.2s; min-width: 38px; justify-content: center; }
+  .cmd-arrow:hover { background: #252548; }
+
+  .explanation { display: none; background: #0d1a2e; border-left: 3px solid #534AB7; padding: 12px 16px; margin-bottom: 4px; border-radius: 0 6px 6px 0; }
+  .explanation.open { display: block; }
+  .explanation p { font-size: 13px; color: #b0c4d8; line-height: 1.7; }
+  .explanation code { background: #1a2a3e; color: #70c8ff; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  .explanation strong { color: #a8e6cf; }
+
+  .hint { font-size: 11px; color: #534AB7; margin-bottom: 8px; }
+
+  /* Alertas */
+  .alert { border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start; }
+  .alert-warn { background: #2a1f00; border: 1px solid #664d00; color: #ffcc44; }
+  .alert-ok { background: #001a0d; border: 1px solid #005522; color: #33cc77; }
+  .alert-info { background: #001a2e; border: 1px solid #003366; color: #44aaff; }
+  .alert-err { background: #2a0000; border: 1px solid #660000; color: #ff6666; }
+  .alert-icon { font-size: 16px; margin-top: 1px; }
+
+  /* Error box */
+  .error-box { background: #1a0000; border: 1px solid #660000; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .error-box-title { color: #ff4444; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+
+  /* Done banner */
+  .done-banner { background: #001a0d; border: 1px solid #005522; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; color: #33cc77; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+
+  /* Grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .info-card { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 8px; padding: 14px; }
+  .card-num { font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 10px; margin-bottom: 8px; display: inline-block; }
+  .card-num.warn { background: #2a1f00; color: #ffcc44; }
+  .card-num.ok { background: #001a0d; color: #33cc77; }
+  .card-num.danger { background: #2a0000; color: #ff6666; }
+  .card-q { font-size: 13px; color: #fff; margin-bottom: 6px; font-weight: bold; }
+  .card-a { font-size: 12px; color: #aaa; line-height: 1.6; }
+
+  /* Código de archivo */
+  .file-path { font-size: 11px; color: #666; margin-bottom: 4px; font-family: monospace; }
+  .file-content { background: #12121f; border-radius: 8px; padding: 14px; font-family: 'Courier New', monospace; font-size: 12px; color: #c8d8e8; line-height: 1.8; white-space: pre-wrap; overflow-x: auto; }
+  .fc-tag { color: #f8b500; }
+  .fc-var { color: #70c8ff; }
+  .fc-str { color: #a8e6cf; }
+
+  /* Navegación */
+  .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+  .btn { padding: 10px 22px; border-radius: 8px; border: 1px solid #3a3a5e; background: #1a1a2e; color: #e0e0e0; font-size: 14px; cursor: pointer; transition: background 0.2s; }
+  .btn:hover { background: #252548; }
+  .btn:disabled { opacity: 0.3; cursor: default; }
+  .btn-primary { background: #534AB7; border-color: #534AB7; color: #fff; }
+  .btn-primary:hover { background: #3C3489; }
+  .nav-info { font-size: 13px; color: #555; }
+
+  /* Copy all */
+  .copy-btn { float: right; background: #1e1e35; border: 1px solid #3a3a5e; color: #a8e6cf; font-size: 11px; padding: 4px 10px; border-radius: 5px; cursor: pointer; margin-top: -2px; }
+  .copy-btn:hover { background: #252548; }
+
+  @media (max-width: 600px) {
+    .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>&#128679; Guía LAMP — CentOS Stream 10</h1>
+<p class="subtitle">Haz clic en cualquier comando para ver su explicación</p>
+
+<div class="progress" id="progress"></div>
+<div id="steps-container"></div>
+
+<div class="nav">
+  <button class="btn" id="btnPrev" onclick="navStep(-1)">&#8592; Anterior</button>
+  <span class="nav-info" id="navInfo"></span>
+  <button class="btn btn-primary" id="btnNext" onclick="navStep(1)">Siguiente &#8594;</button>
+</div>
+
+<script>
+var currentStep = 0;
+
+var stepsData = [
+  {
+    id: 1, done: true,
+    badge: "Paso 1",
+    title: "Preparar el sistema",
+    desc: "Actualizar paquetes y abrir los puertos del firewall antes de instalar cualquier servicio.",
+    content: function() {
+      return done() +
+        section("Actualizar el sistema", [
+          cmd("sudo dnf update -y", "sudo ejecuta el comando como administrador. dnf es el gestor de paquetes de CentOS Stream 10 (reemplazó a yum). <strong>update</strong> descarga e instala las versiones más recientes de todo lo que ya tienes instalado. <strong>-y</strong> responde sí automáticamente a todas las confirmaciones para no interrumpirte."),
+          cmd("cat /etc/centos-release", "<strong>cat</strong> muestra el contenido de un archivo en pantalla. <strong>/etc/centos-release</strong> contiene la versión del sistema operativo. Te confirma que estás en CentOS Stream 10.")
+        ]) +
+        section("Configurar Firewall", [
+          cmd("sudo systemctl enable --now firewalld", "<strong>systemctl</strong> controla los servicios del sistema. <strong>enable</strong> hace que el servicio inicie automáticamente con cada reinicio del servidor. <strong>--now</strong> lo inicia también en este momento sin esperar el reinicio. <strong>firewalld</strong> es el servicio de firewall de CentOS."),
+          cmd("sudo firewall-cmd --permanent --add-service=http", "<strong>firewall-cmd</strong> gestiona las reglas del firewall. <strong>--permanent</strong> guarda la regla de forma definitiva (sobrevive reinicios). <strong>--add-service=http</strong> abre el puerto 80 para que el mundo pueda ver tu sitio web."),
+          cmd("sudo firewall-cmd --permanent --add-service=https", "Igual que el anterior pero abre el puerto 443 para tráfico HTTPS (cifrado). Necesario si más adelante agregas un certificado SSL con Let's Encrypt."),
+          cmd("sudo firewall-cmd --reload", "Aplica todas las reglas permanentes que acabas de agregar. Sin este comando los cambios existen en el archivo pero no están activos todavía."),
+          cmd("sudo firewall-cmd --list-services", "Muestra todos los servicios que el firewall tiene abiertos. Debes ver <strong>http https</strong> en la salida para confirmar que las reglas quedaron bien aplicadas.")
+        ]) +
+        alertBox("info", "Debes ver <strong>http https</strong> en la salida del último comando.");
+    }
+  },
+  {
+    id: 2, done: true,
+    badge: "Paso 2",
+    title: "Instalar Apache (httpd)",
+    desc: "Apache es el servidor web que recibe las peticiones del navegador y sirve los archivos de tu sitio.",
+    content: function() {
+      return done() +
+        section("Instalar y arrancar Apache", [
+          cmd("sudo dnf install httpd -y", "<strong>install</strong> descarga e instala el paquete indicado. <strong>httpd</strong> es el nombre del paquete de Apache en sistemas RHEL y CentOS — viene de HTTP Daemon, que significa programa que corre en segundo plano atendiendo peticiones HTTP. <strong>-y</strong> acepta la instalación automáticamente."),
+          cmd("sudo systemctl enable httpd", "Registra Apache para que inicie automáticamente cada vez que el servidor se reinicie. Sin este comando tendrías que iniciarlo manualmente después de cada reinicio de la máquina."),
+          cmd("sudo systemctl start httpd", "Inicia el servicio de Apache ahora mismo. Después de este comando el servidor ya está escuchando peticiones en el puerto 80."),
+          cmd("sudo systemctl status httpd", "Muestra el estado actual del servicio. Busca la línea que dice <code>active (running)</code> en verde. También muestra las últimas líneas del log por si hay algún error.")
+        ]) +
+        section("Página de prueba", [
+          cmd('echo "&lt;h1&gt;Apache funciona!&lt;/h1&gt;" | sudo tee /var/www/html/index.html', "<strong>echo</strong> imprime texto. El símbolo <strong>|</strong> (pipe) pasa esa salida como entrada al siguiente comando. <strong>tee</strong> escribe el contenido en un archivo. Se usa con sudo porque la carpeta /var/www/html/ requiere permisos de administrador para escribir. <strong>index.html</strong> es la página que Apache sirve por defecto cuando alguien visita la IP del servidor.")
+        ]) +
+        alertBox("ok", "Abre <strong>http://IP_DE_TU_SERVIDOR</strong> en el navegador para verificar que Apache funciona.") +
+        '<div style="margin-top:12px;"><div class="section"><div class="section-label">Directorios importantes de Apache</div><div style="font-family:monospace;font-size:13px;line-height:2;color:#aaa;"><span style="color:#70c8ff">/var/www/html/</span> → raíz del sitio web<br><span style="color:#70c8ff">/etc/httpd/conf/httpd.conf</span> → configuración principal<br><span style="color:#70c8ff">/etc/httpd/conf.d/</span> → Virtual Hosts<br><span style="color:#70c8ff">/var/log/httpd/</span> → logs de acceso y errores</div></div></div>';
+    }
+  },
+  {
+    id: 3, done: true,
+    badge: "Paso 3",
+    title: "Instalar MySQL 8.4",
+    desc: "En CentOS Stream 10 el paquete se llama mysql8.4-server, NO mysql-server. Ese error lo vivimos en clase.",
+    content: function() {
+      return done() +
+        '<div class="error-box"><div class="error-box-title">&#9888; Error que tuvimos en clase</div><div style="background:#0a0000;border-radius:6px;padding:12px;font-family:monospace;font-size:13px;line-height:2;"><span style="color:#ff4444">sudo dnf install mysql-server -y</span><br><span style="color:#666">→ Error: No se pudo encontrar ningún resultado: mysql-server</span><br><br><span style="color:#a8e6cf">sudo dnf install mysql8.4-server -y</span><br><span style="color:#33cc77">→ Este es el nombre correcto en CentOS Stream 10</span></div></div>' +
+        section("Instalar y arrancar MySQL 8.4", [
+          cmd("sudo dnf install mysql8.4-server -y", "Instala MySQL versión 8.4. En CentOS Stream 10 el paquete incluye el número de versión en el nombre porque pueden coexistir varias versiones. Esta instalación incluye automáticamente las dependencias: mysql8.4-common, mysql8.4-errmsg, mysql-selinux, mecab y otras."),
+          cmd("sudo systemctl enable --now mysqld", "<strong>mysqld</strong> es el nombre del servicio de MySQL (la d viene de daemon). <strong>enable --now</strong> hace dos cosas en un solo comando: lo registra para inicio automático Y lo arranca inmediatamente."),
+          cmd("sudo systemctl status mysqld", "Verifica que MySQL está corriendo. Busca <code>active (running)</code>. También muestra el archivo socket que usan PHP y otros programas para conectarse localmente a MySQL.")
+        ]) +
+        section("Asegurar la instalación", [
+          cmd("sudo mysql_secure_installation", "Script interactivo que viene con MySQL para aplicar configuraciones básicas de seguridad. Te hace 6 preguntas. Ver el siguiente paso para la explicación detallada de cada una.")
+        ]) +
+        alertBox("info", "En el siguiente paso encontrarás la explicación de cada pregunta del asistente.");
+    }
+  },
+  {
+    id: "3b", done: true,
+    badge: "Paso 3b",
+    title: "Preguntas de mysql_secure_installation",
+    desc: "El asistente de seguridad hace 6 preguntas. Aquí está lo que significa cada una y cómo responder.",
+    content: function() {
+      return done() +
+        '<div class="grid2">' +
+        infoCard("Pregunta 1", "warn", "Responder: N", "Setup VALIDATE PASSWORD?", "Activa un plugin que obliga a que las contraseñas tengan mayúsculas, símbolos y longitud mínima. En práctica pon <strong>N</strong>. En producción real pon <strong>Y</strong>.") +
+        infoCard("Pregunta 2", "danger", "Escribe una contraseña", "New password for root", "Es la contraseña del superusuario de MySQL. No tiene relación con el root de Linux. Este usuario tiene acceso total a todas las bases de datos. Ponla fuerte.") +
+        infoCard("Pregunta 3", "ok", "Responder: Y", "Remove anonymous users?", "MySQL crea por defecto un usuario vacío sin contraseña que cualquiera puede usar. Siempre <strong>Y</strong> — no hay razón para dejarlo.") +
+        infoCard("Pregunta 4", "ok", "Responder: Y", "Disallow root login remotely?", "Impide que el usuario root de MySQL se conecte desde otra máquina por red. Solo podrá entrar desde localhost. Para acceso remoto crea usuarios con permisos limitados.") +
+        infoCard("Pregunta 5", "ok", "Responder: Y", "Remove test database?", "MySQL trae una base de datos llamada test que cualquier usuario puede ver y modificar. No sirve en producción y es un riesgo. Siempre <strong>Y</strong>.") +
+        infoCard("Pregunta 6", "ok", "Responder: Y", "Reload privilege tables?", "Aplica todos los cambios anteriores en memoria sin necesidad de reiniciar el servicio. Si dices N los cambios no tienen efecto hasta el próximo reinicio de MySQL.") +
+        '</div>';
+    }
+  },
+  {
+    id: "3c", done: true,
+    badge: "Paso 3c",
+    title: "Crear base de datos y usuario",
+    desc: "Lecciones aprendidas: las comillas simples son obligatorias, siempre terminar con punto y coma, y si ves -> escribe \\c para cancelar.",
+    content: function() {
+      return done() +
+        '<div class="error-box"><div class="error-box-title">&#9888; Errores que tuvimos en MySQL</div><div style="background:#0a0000;border-radius:6px;padding:12px;font-family:monospace;font-size:13px;line-height:2;"><span style="color:#ff4444">CREATE USER miapp_user@localhost IDENTIFIED BY Contrasena123!</span><br><span style="color:#666">→ ERROR 1064: falta comillas simples en usuario y contraseña</span><br><br><span style="color:#ff4444">CREATE DATABSE miapp_db;</span><br><span style="color:#666">→ ERROR 1064: typo — falta la A en DATABASE</span><br><br><span style="color:#ffcc44">mysql&gt; → (muestra -&gt;)</span><br><span style="color:#666">→ El comando está incompleto, escribe \\c y Enter para cancelar</span></div></div>' +
+        section("Entrar a MySQL", [
+          cmd("sudo mysql -u root -p", "<strong>mysql</strong> es el cliente de línea de comandos de MySQL. <strong>-u root</strong> indica que entras como el usuario root de MySQL (no es el mismo que el root de Linux). <strong>-p</strong> le dice que pida la contraseña de forma segura — si escribieras la contraseña directamente en el comando quedaría guardada en el historial del terminal.")
+        ]) +
+        section("Comandos dentro de MySQL — copiar y pegar todo junto", [
+          cmd("DROP DATABASE IF EXISTS miapp_db;", "<strong>DROP DATABASE</strong> elimina una base de datos con todo su contenido. <strong>IF EXISTS</strong> evita error si la base de datos no existía todavía. El punto y coma <strong>;</strong> es OBLIGATORIO — le dice a MySQL que el comando terminó. Sin él MySQL espera más instrucciones y muestra el prompt <code>-&gt;</code>."),
+          cmd("CREATE DATABASE miapp_db;", "Crea una nueva base de datos vacía llamada <strong>miapp_db</strong>. Es el contenedor donde vivirán todas las tablas de tu aplicación. El nombre debe ser consistente con el que uses en los archivos PHP."),
+          cmd("CREATE USER 'user1'@'localhost' IDENTIFIED BY 'Contrasenasegura123!';", "Crea un nuevo usuario de MySQL. Las <strong>comillas simples ' '</strong> son OBLIGATORIAS para delimitar texto — sin ellas MySQL no sabe dónde empieza y termina el valor y lanza ERROR 1064. <strong>@'localhost'</strong> significa que solo puede conectarse desde el mismo servidor, no desde internet."),
+          cmd("GRANT ALL PRIVILEGES ON miapp_db.* TO 'user1'@'localhost';", "<strong>GRANT</strong> otorga permisos. <strong>ALL PRIVILEGES</strong> da todos los permisos posibles: SELECT, INSERT, UPDATE, DELETE, etc. <strong>miapp_db.*</strong> significa todas las tablas dentro de la base de datos miapp_db. Sin este comando el usuario existe pero no puede hacer nada."),
+          cmd("FLUSH PRIVILEGES;", "Recarga la tabla de permisos en memoria para que el GRANT tome efecto inmediatamente. Sin este comando MySQL no reconoce los nuevos permisos hasta reiniciar el servicio."),
+          cmd("EXIT;", "Sale del cliente MySQL y regresa al terminal normal de Linux. También puedes escribir <code>quit</code> o presionar <code>Ctrl + D</code>.")
+        ]) +
+        alertBox("info", "Verifica que funciona: <code>mysql -u user1 -p miapp_db</code> — debe entrar sin error.");
+    }
+  },
+  {
+    id: 4, done: false,
+    badge: "Paso 4",
+    title: "Instalar PHP",
+    desc: "PHP procesa la lógica del servidor y genera el HTML dinámico. Se instala con varias extensiones necesarias para conectar con MySQL.",
+    content: function() {
+      return section("Instalar PHP y sus extensiones", [
+          cmd("sudo dnf install php php-mysqlnd php-fpm php-json php-common php-mbstring php-xml php-gd php-curl -y", "Instala PHP junto con extensiones esenciales. <strong>php</strong> es el intérprete base. <strong>php-mysqlnd</strong> es el driver nativo de MySQL — sin él PHP no puede conectarse a la base de datos (mysqlnd = MySQL Native Driver). <strong>php-fpm</strong> es el gestor de procesos PHP que trabaja con Apache. <strong>php-json</strong> maneja datos JSON. <strong>php-mbstring</strong> soporta textos con acentos y caracteres especiales. <strong>php-xml</strong> procesa archivos XML. <strong>php-gd</strong> permite manipular imágenes. <strong>php-curl</strong> hace peticiones HTTP a otros servidores. El <strong>\\</strong> al final de línea continúa el comando en la siguiente línea."),
+          cmd("php -v", "Muestra la versión de PHP instalada. Útil para verificar que la instalación fue exitosa y confirmar el número de versión disponible.")
+        ]) +
+        section("Reiniciar Apache para cargar PHP", [
+          cmd("sudo systemctl restart httpd", "Reinicia Apache completamente para que cargue el módulo de PHP recién instalado. A diferencia de <strong>reload</strong> que solo recarga la configuración, <strong>restart</strong> detiene y vuelve a iniciar el proceso — necesario cuando se instala un nuevo módulo o extensión.")
+        ]) +
+        section("Archivo de prueba PHP", [
+          cmd('echo "&lt;?php phpinfo(); ?&gt;" | sudo tee /var/www/html/info.php', "Crea un archivo PHP de prueba. <strong>phpinfo()</strong> es una función que genera una página HTML con toda la información de PHP: versión, extensiones instaladas, configuración del servidor, variables de entorno, etc. Muy útil para verificar que PHP funciona correctamente y que las extensiones están cargadas.")
+        ]) +
+        alertBox("ok", "Visita <strong>http://TU_IP/info.php</strong> — verás la página de información de PHP con todas las extensiones instaladas.") +
+        alertBox("warn", "Borra <code>info.php</code> cuando termines las pruebas con: <code>sudo rm /var/www/html/info.php</code> — expone información sensible del servidor al público.");
+    }
+  },
+  {
+    id: 5, done: false,
+    badge: "Paso 5",
+    title: "Virtual Host: tu sitio propio",
+    desc: "Un Virtual Host permite que Apache sirva tu dominio propio con su propia configuración y directorio.",
+    content: function() {
+      return section("Crear la estructura de directorios", [
+          cmd("sudo mkdir -p /var/www/misitio.com/html", "<strong>mkdir</strong> crea directorios. <strong>-p</strong> crea también los directorios padre si no existen — en este caso crea <code>misitio.com</code> y dentro <code>html</code> de una sola vez. La ruta <code>/var/www/</code> es la convención estándar en Linux para archivos web."),
+          cmd("sudo chown -R $USER:$USER /var/www/misitio.com", "<strong>chown</strong> cambia el propietario de archivos y carpetas. <strong>-R</strong> aplica el cambio de forma recursiva a todo el contenido. <strong>$USER</strong> es una variable del sistema que contiene tu nombre de usuario actual — así no tienes que escribirlo manualmente."),
+          cmd("sudo chmod -R 755 /var/www/misitio.com", "<strong>chmod</strong> cambia los permisos de archivos. <strong>755</strong> significa: el propietario puede leer, escribir y ejecutar (7 = 4+2+1). El grupo y los demás solo pueden leer y ejecutar (5 = 4+1). Esto permite que Apache lea los archivos pero no los modifique.")
+        ]) +
+        section("Configurar el Virtual Host", [
+          cmd("sudo nano /etc/httpd/conf.d/misitio.com.conf", "<strong>nano</strong> es un editor de texto en la terminal. Abre el archivo de configuración del Virtual Host. La carpeta <code>/etc/httpd/conf.d/</code> es donde Apache busca configuraciones adicionales. Cada archivo <code>.conf</code> que pongas ahí se carga automáticamente al iniciar Apache."),
+          cmd("sudo apachectl configtest", "<strong>apachectl</strong> es la herramienta de control de Apache. <strong>configtest</strong> revisa la sintaxis de todos los archivos de configuración SIN reiniciar el servicio. Si hay un error tipográfico en el archivo .conf te muestra la línea exacta. Siempre ejecuta esto antes de recargar Apache."),
+          cmd("sudo systemctl reload httpd", "<strong>reload</strong> recarga la configuración de Apache sin interrumpir las conexiones activas. A diferencia de <strong>restart</strong>, los usuarios que ya están en el sitio no se desconectan. Úsalo cuando solo cambiaste archivos de configuración.")
+        ]) +
+        '<div class="section"><div class="section-label">Contenido del archivo Virtual Host</div>' +
+        '<div class="file-path">/etc/httpd/conf.d/misitio.com.conf</div>' +
+        '<div class="file-content"><span class="fc-tag">&lt;VirtualHost</span> <span class="fc-var">*:80</span><span class="fc-tag">&gt;</span>\n    <span class="fc-str">ServerName</span>    misitio.com\n    <span class="fc-str">ServerAlias</span>   www.misitio.com\n    <span class="fc-str">DocumentRoot</span>  /var/www/misitio.com/html\n    <span class="fc-str">ErrorLog</span>      /var/log/httpd/misitio-error.log\n    <span class="fc-str">CustomLog</span>     /var/log/httpd/misitio-access.log combined\n    <span class="fc-tag">&lt;Directory</span> <span class="fc-var">/var/www/misitio.com/html</span><span class="fc-tag">&gt;</span>\n        <span class="fc-str">AllowOverride</span> All\n        <span class="fc-str">Require</span>       all granted\n    <span class="fc-tag">&lt;/Directory&gt;</span>\n<span class="fc-tag">&lt;/VirtualHost&gt;</span></div></div>' +
+        alertBox("warn", "Sin dominio real agrega <code>127.0.0.1 misitio.com</code> en tu archivo <code>/etc/hosts</code> local para probar.");
+    }
+  },
+  {
+    id: 6, done: false,
+    badge: "Paso 6",
+    title: "App PHP + MySQL (CRUD completo)",
+    desc: "Mini gestor de tareas que conecta PHP con MySQL. Es la práctica final que une todo el stack LAMP.",
+    content: function() {
+      return section("Crear la tabla en MySQL", [
+          cmd("sudo mysql -u root -p", "Entra a MySQL como administrador para crear la tabla en la base de datos ya configurada."),
+          cmd("USE miapp_db;", "<strong>USE</strong> selecciona la base de datos con la que vas a trabajar. Todos los comandos siguientes operarán sobre miapp_db. Sin este comando MySQL no sabe en qué base de datos crear la tabla."),
+          cmd("CREATE TABLE tareas (id INT AUTO_INCREMENT PRIMARY KEY, tarea VARCHAR(255) NOT NULL, hecha TINYINT(1) DEFAULT 0);", "Crea la tabla <strong>tareas</strong> con tres columnas. <strong>id INT AUTO_INCREMENT PRIMARY KEY</strong> es un número que se incrementa solo para identificar cada fila de forma única. <strong>tarea VARCHAR(255) NOT NULL</strong> almacena texto de hasta 255 caracteres y no puede quedar vacío. <strong>hecha TINYINT(1) DEFAULT 0</strong> es un valor 0 o 1 que indica si la tarea está completada, con valor inicial 0 (pendiente)."),
+          cmd("INSERT INTO tareas (tarea) VALUES ('Instalar Apache'), ('Instalar PHP');", "<strong>INSERT INTO</strong> agrega filas a la tabla. <strong>VALUES</strong> contiene los datos entre comillas simples. Insertamos dos tareas de ejemplo para que la app tenga datos al abrirla por primera vez."),
+          cmd("EXIT;", "Sale del cliente MySQL y regresa al terminal de Linux.")
+        ]) +
+        '<div class="section"><div class="section-label">Archivo de la app — /var/www/html/tareas.php</div>' +
+        '<div class="file-content"><span class="fc-tag">&lt;?php</span>\n<span class="fc-var">$conn</span> = new <span class="fc-str">PDO</span>("mysql:host=localhost;dbname=miapp_db", "user1", "Contrasenasegura123!");\n\nif (<span class="fc-var">$_POST</span>[\'nueva\'] ?? false) {\n    <span class="fc-var">$s</span> = <span class="fc-var">$conn</span>-&gt;prepare("INSERT INTO tareas (tarea) VALUES (?)");\n    <span class="fc-var">$s</span>-&gt;execute([<span class="fc-var">$_POST</span>[\'tarea\']]);\n}\nif (<span class="fc-var">$_GET</span>[\'done\'] ?? false) {\n    <span class="fc-var">$s</span> = <span class="fc-var">$conn</span>-&gt;prepare("UPDATE tareas SET hecha=1 WHERE id=?");\n    <span class="fc-var">$s</span>-&gt;execute([<span class="fc-var">$_GET</span>[\'done\']]);\n}\n<span class="fc-var">$tareas</span> = <span class="fc-var">$conn</span>-&gt;query("SELECT * FROM tareas")-&gt;fetchAll();\n<span class="fc-tag">?&gt;</span>\n&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;body&gt;\n&lt;h1&gt;Lista de Tareas LAMP&lt;/h1&gt;\n&lt;form method="POST"&gt;\n  &lt;input name="tarea" placeholder="Nueva tarea..." required&gt;\n  &lt;button name="nueva"&gt;Agregar&lt;/button&gt;\n&lt;/form&gt;\n&lt;ul&gt;\n<span class="fc-tag">&lt;?php</span> foreach (<span class="fc-var">$tareas</span> as <span class="fc-var">$t</span>): <span class="fc-tag">?&gt;</span>\n  &lt;li&gt;&lt;?= htmlspecialchars(<span class="fc-var">$t</span>[\'tarea\']) ?&gt;\n    &lt;?php if (!<span class="fc-var">$t</span>[\'hecha\']): ?&gt;\n      &lt;a href="?done=&lt;?= <span class="fc-var">$t</span>[\'id\'] ?&gt;"&gt; ✓&lt;/a&gt;\n    &lt;?php endif; ?&gt;\n  &lt;/li&gt;\n<span class="fc-tag">&lt;?php</span> endforeach; <span class="fc-tag">?&gt;</span>\n&lt;/ul&gt;&lt;/body&gt;&lt;/html&gt;</div></div>' +
+        alertBox("ok", "Accede a <strong>http://TU_IP/tareas.php</strong> — tendrás una app funcional con PHP + MySQL en tu servidor LAMP.");
+    }
+  },
+  {
+    id: 7, done: false,
+    badge: "Referencia",
+    title: "Mantenimiento del stack LAMP",
+    desc: "Comandos que usarás frecuentemente para administrar y depurar tu servidor.",
+    content: function() {
+      return section("Estado y control de servicios", [
+          cmd("sudo systemctl status httpd mysqld", "Muestra el estado de Apache y MySQL al mismo tiempo. Busca <strong>active (running)</strong> en ambos. Si alguno aparece como <strong>failed</strong> o <strong>inactive</strong> debes revisar los logs para encontrar el error."),
+          cmd("sudo systemctl restart httpd mysqld", "Reinicia ambos servicios completamente. Útil cuando cambiaste archivos de configuración o instalaste nuevas extensiones de PHP. Interrumpe brevemente las conexiones activas."),
+          cmd("sudo systemctl reload httpd", "Recarga solo la configuración de Apache sin interrumpir conexiones. Úsalo después de modificar un Virtual Host o el archivo httpd.conf.")
+        ]) +
+        section("Revisar logs y versiones", [
+          cmd("sudo tail -f /var/log/httpd/error_log", "<strong>tail</strong> muestra las últimas líneas de un archivo. <strong>-f</strong> sigue mostrando nuevas líneas en tiempo real (follow). Es el primer lugar donde mirar cuando algo falla en el sitio — el log te dice exactamente qué pasó, en qué archivo y en qué línea."),
+          cmd("sudo tail -f /var/log/httpd/access_log", "Muestra en tiempo real todas las peticiones que llegan al servidor: IP del visitante, URL solicitada, código de respuesta (200=ok, 404=no encontrado, 500=error del servidor) y tamaño de la respuesta."),
+          cmd("httpd -v && php -v && mysql --version", "Muestra las versiones de Apache, PHP y MySQL. El <strong>&&</strong> ejecuta el siguiente comando solo si el anterior fue exitoso. Útil para saber exactamente qué versiones tienes instaladas.")
+        ]) +
+        section("Acceso a MySQL", [
+          cmd("mysql -u user1 -p miapp_db", "Entra directamente a MySQL con el usuario de la aplicación y selecciona la base de datos miapp_db. Útil para verificar datos, depurar problemas o ejecutar consultas de mantenimiento."),
+          cmd("sudo mysql -u root -p", "Entra como administrador total de MySQL. Úsalo solo cuando necesitas crear usuarios, bases de datos o modificar permisos.")
+        ]) +
+        alertBox("ok", "Próximos pasos: instala <strong>phpMyAdmin</strong> para gestionar MySQL desde el navegador, o configura <strong>certbot</strong> para agregar HTTPS gratuito con Let's Encrypt.");
+    }
+  }
+];
+
+// Helpers
+function done() {
+  return '<div class="done-banner">&#9989; Este paso ya fue completado en clase</div>';
+}
+
+function section(label, cmds) {
+  var html = '<div class="section"><div class="section-label">' + label + '</div>';
+  html += '<div style="font-size:11px;color:#534AB7;margin-bottom:8px;">&#128070; Haz clic en un comando para ver su explicación</div>';
+  cmds.forEach(function(c) { html += c; });
+  html += '</div>';
+  return html;
+}
+
+function cmd(text, exp) {
+  var id = 'exp_' + Math.random().toString(36).substr(2, 9);
+  var displayText = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  var copyText = displayText;
+  return '<div class="cmd-block">' +
+    '<div class="cmd-row" onclick="toggleExp(\'' + id + '\')">' +
+    '<div class="cmd-text">' + text + '</div>' +
+    '<div class="cmd-arrow" title="Ver explicación">&#9660;</div>' +
+    '</div>' +
+    '<div class="explanation" id="' + id + '"><p>' + exp + '</p></div>' +
+    '</div>';
+}
+
+function alertBox(type, text) {
+  var icons = { warn: '&#9888;', ok: '&#9989;', info: 'ℹ️', err: '&#10060;' };
+  var classes = { warn: 'alert-warn', ok: 'alert-ok', info: 'alert-info', err: 'alert-err' };
+  return '<div class="alert ' + classes[type] + '"><span class="alert-icon">' + icons[type] + '</span><span>' + text + '</span></div>';
+}
+
+function infoCard(num, type, resp, q, a) {
+  return '<div class="info-card"><span class="card-num ' + type + '">' + num + '</span> <span style="font-size:11px;color:#666;">' + resp + '</span><div class="card-q">' + q + '</div><div class="card-a">' + a + '</div></div>';
+}
+
+function toggleExp(id) {
+  var el = document.getElementById(id);
+  var arrow = el.previousElementSibling.querySelector('.cmd-arrow');
+  if (el.classList.contains('open')) {
+    el.classList.remove('open');
+    arrow.innerHTML = '&#9660;';
+  } else {
+    el.classList.add('open');
+    arrow.innerHTML = '&#9650;';
+  }
+}
+
+// Render steps
+function renderSteps() {
+  var container = document.getElementById('steps-container');
+  var progressEl = document.getElementById('progress');
+  container.innerHTML = '';
+  progressEl.innerHTML = '';
+
+  stepsData.forEach(function(s, i) {
+    var div = document.createElement('div');
+    div.className = 'step' + (i === currentStep ? ' active' : '');
+    div.id = 'step_' + i;
+
+    var badgeClass = s.done ? 'step-badge done' : 'step-badge';
+    var badgeIcon = s.done ? '✓ ' : '';
+
+    div.innerHTML =
+      '<div class="step-header">' +
+        '<span class="' + badgeClass + '">' + badgeIcon + s.badge + '</span>' +
+        '<span class="step-title">' + s.title + '</span>' +
+      '</div>' +
+      '<p class="step-desc">' + s.desc + '</p>' +
+      s.content();
+
+    container.appendChild(div);
+
+    var pd = document.createElement('div');
+    pd.className = 'progress-step' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
+    pd.onclick = (function(idx) { return function() { currentStep = idx; renderSteps(); }; })(i);
+    progressEl.appendChild(pd);
+  });
+
+  document.getElementById('navInfo').textContent = (currentStep + 1) + ' / ' + stepsData.length;
+  document.getElementById('btnPrev').disabled = currentStep === 0;
+  document.getElementById('btnNext').disabled = currentStep === stepsData.length - 1;
+  document.getElementById('btnNext').textContent = currentStep === stepsData.length - 1 ? 'Fin' : 'Siguiente →';
+}
+
+function navStep(dir) {
+  currentStep = Math.max(0, Math.min(stepsData.length - 1, currentStep + dir));
+  renderSteps();
+  window.scrollTo(0, 0);
+}
+
+renderSteps();
+</script>
+</body>
+</html>
